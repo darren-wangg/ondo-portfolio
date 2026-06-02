@@ -13,9 +13,6 @@ build/
 .env.*
 !.env.example
 
-# prisma
-packages/db/generated/
-
 # logs / os
 *.log
 .DS_Store
