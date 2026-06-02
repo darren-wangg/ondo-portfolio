@@ -1,16 +1,19 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ondo",
-  description: "Full-stack starter — Next.js, Express, Prisma.",
+  title: "Ondo · Portfolio Explorer",
+  description: "A unified, multi-chain view of your token holdings.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

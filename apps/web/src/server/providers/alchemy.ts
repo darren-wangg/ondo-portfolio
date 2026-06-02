@@ -78,7 +78,8 @@ export class AlchemyProvider implements PortfolioProvider {
 
       // Spam filter: keep native coins, anything Alchemy can price, and known
       // registry tokens. Drops the long tail of unpriced airdrop/spam ERC-20s.
-      const known = !isNative && registryAssetId(chain.chainId, t.tokenAddress!);
+      const known =
+        !isNative && registryAssetId(chain.chainId, t.tokenAddress!);
       if (!isNative && priceUsd === null && !known) continue;
 
       const name = isNative

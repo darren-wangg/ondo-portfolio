@@ -4,9 +4,12 @@ import { z } from "zod";
 // allowed so the partial-failure path can be demoed without a real key.
 const addressSchema = z
   .string()
-  .refine((a) => /^0x[a-fA-F0-9]{40}$/.test(a) || a.toLowerCase().includes("fail"), {
-    message: "Invalid EVM address",
-  });
+  .refine(
+    (a) => /^0x[a-fA-F0-9]{40}$/.test(a) || a.toLowerCase().includes("fail"),
+    {
+      message: "Invalid EVM address",
+    },
+  );
 
 export const portfolioBodySchema = z.object({
   wallets: z

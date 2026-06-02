@@ -8,7 +8,10 @@ const BAD = "0xfail" + "0".repeat(36);
 
 describe("buildPortfolio (mock provider)", () => {
   it("returns normalized positions and ok status for a good wallet", async () => {
-    const res = await buildPortfolio([{ address: GOOD, label: "Main" }], ALL_SLUGS);
+    const res = await buildPortfolio(
+      [{ address: GOOD, label: "Main" }],
+      ALL_SLUGS,
+    );
     expect(res.mode).toBe("mock");
     expect(res.positions.length).toBeGreaterThan(0);
     expect(res.sources[0]).toMatchObject({ status: "ok" });

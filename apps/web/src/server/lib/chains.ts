@@ -12,11 +12,51 @@ export type ChainConfig = {
 };
 
 export const CHAINS: ChainConfig[] = [
-  { chainId: 1, alchemySlug: "eth-mainnet", name: "Ethereum", nativeSymbol: "ETH", nativeName: "Ether", nativeDecimals: 18, nativeAssetId: "native:eth" },
-  { chainId: 8453, alchemySlug: "base-mainnet", name: "Base", nativeSymbol: "ETH", nativeName: "Ether", nativeDecimals: 18, nativeAssetId: "native:eth" },
-  { chainId: 42161, alchemySlug: "arb-mainnet", name: "Arbitrum", nativeSymbol: "ETH", nativeName: "Ether", nativeDecimals: 18, nativeAssetId: "native:eth" },
-  { chainId: 10, alchemySlug: "opt-mainnet", name: "Optimism", nativeSymbol: "ETH", nativeName: "Ether", nativeDecimals: 18, nativeAssetId: "native:eth" },
-  { chainId: 137, alchemySlug: "polygon-mainnet", name: "Polygon", nativeSymbol: "POL", nativeName: "Polygon", nativeDecimals: 18, nativeAssetId: "native:pol" },
+  {
+    chainId: 1,
+    alchemySlug: "eth-mainnet",
+    name: "Ethereum",
+    nativeSymbol: "ETH",
+    nativeName: "Ether",
+    nativeDecimals: 18,
+    nativeAssetId: "native:eth",
+  },
+  {
+    chainId: 8453,
+    alchemySlug: "base-mainnet",
+    name: "Base",
+    nativeSymbol: "ETH",
+    nativeName: "Ether",
+    nativeDecimals: 18,
+    nativeAssetId: "native:eth",
+  },
+  {
+    chainId: 42161,
+    alchemySlug: "arb-mainnet",
+    name: "Arbitrum",
+    nativeSymbol: "ETH",
+    nativeName: "Ether",
+    nativeDecimals: 18,
+    nativeAssetId: "native:eth",
+  },
+  {
+    chainId: 10,
+    alchemySlug: "opt-mainnet",
+    name: "Optimism",
+    nativeSymbol: "ETH",
+    nativeName: "Ether",
+    nativeDecimals: 18,
+    nativeAssetId: "native:eth",
+  },
+  {
+    chainId: 137,
+    alchemySlug: "polygon-mainnet",
+    name: "Polygon",
+    nativeSymbol: "POL",
+    nativeName: "Polygon",
+    nativeDecimals: 18,
+    nativeAssetId: "native:pol",
+  },
 ];
 
 export const CHAIN_BY_SLUG = new Map(CHAINS.map((c) => [c.alchemySlug, c]));
