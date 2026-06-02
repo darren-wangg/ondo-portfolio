@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Portfolio Explorer — System Design</title>
+    <style>
+      @page {
+        size: letter portrait;
+        margin: 14mm 14mm;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+        color: #0b0d12;
+        line-height: 1.4;
+        margin: 0;
+      }
+      h1 {
+        font-size: 23px;
+        margin: 0 0 2px;
+      }
+      .sub {
+        color: #5b6472;
+        margin: 0 0 18px;
+        font-size: 13px;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 22px 0 10px;
+        border-bottom: 1px solid #e3e6ea;
+        padding-bottom: 5px;
+      }
+      .layer {
+        border: 1px solid #e3e6ea;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 10px;
+        background: #fff;
+      }
+      .layer > .h {
+        font-weight: 700;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #6366f1;
+        margin-bottom: 8px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .cell {
+        flex: 1 1 0;
+        min-width: 120px;
+        border: 1px solid #e3e6ea;
+        border-radius: 8px;
+        padding: 8px 10px;
+        background: #f8f9fb;
+      }
+      .cell .t {
+        font-weight: 600;
+        font-size: 12.5px;
+      }
+      .cell .d {
+        color: #5b6472;
+        font-size: 11.5px;
+        margin-top: 2px;
+      }
+      .arrow {
+        text-align: center;
+        color: #b3b9c4;
+        font-size: 15px;
+        margin: -4px 0 6px;
+      }
+      code {
+        background: #f0f2f5;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 11.5px;
+      }
+      .two {
+        display: flex;
+        gap: 14px;
+      }
+      .two > div {
+        flex: 1;
+      }
+      ul {
+        margin: 6px 0;
+        padding-left: 18px;
+        font-size: 12.5px;
+      }
+      li {
+        margin-bottom: 4px;
+      }
+      .ext {
+        background: #eef2ff;
+        border-color: #c7d2fe;
+      }
+      .decision {
+        font-size: 12.5px;
+        border-left: 3px solid #6366f1;
+        padding: 4px 10px;
+        margin: 6px 0;
+        color: #333;
+      }
+      .decision b {
+        color: #0b0d12;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Multi-Chain Portfolio Explorer — System Design</h1>
+    <p class="sub">
+      One Next.js app: UI + API Route Handlers, no database. Deployed to Vercel.
+    </p>
+
+    <h2>Component layers</h2>
+
+    <div class="layer">
+      <div class="h">Client (browser)</div>
+      <div class="row">
+        <div class="cell">
+          <div class="t">page.tsx</div>
+          <div class="d">
+            Explorer screen: grouping tabs, search, summary, states
+          </div>
+        </div>
+        <div class="cell">
+          <div class="t">WalletBar</div>
+          <div class="d">RainbowKit connect + watch-address input + chips</div>
+        </div>
+        <div class="cell">
+          <div class="t">PortfolioTable</div>
+          <div class="d">Renders grouped rows; Framer Motion transitions</div>
+        </div>
+      </div>
+      <div class="row" style="margin-top: 8px">
+        <div class="cell">
+          <div class="t">store/wallets (Zustand)</div>
+          <div class="d">Tracked wallets, persisted to localStorage</div>
+        </div>
+        <div class="cell">
+          <div class="t">usePortfolio (TanStack Query)</div>
+          <div class="d">Caches the POST; refetches on wallet-set change</div>
+        </div>
+        <div class="cell">
+          <div class="t">features/grouping</div>
+          <div class="d">Pure groupBy + BigInt sums (token/network/wallet)</div>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓ &nbsp; HTTP (same origin) &nbsp; ↓</div>
+
+    <div class="layer">
+      <div class="h">Server — Next.js Route Handlers (src/app/api)</div>
+      <div class="row">
+        <div class="cell">
+          <div class="t">POST /api/portfolio</div>
+          <div class="d">Zod-validate → buildPortfolio → JSON</div>
+        </div>
+        <div class="cell">
+          <div class="t">GET /api/transactions</div>
+          <div class="d">Recent transfers (stretch)</div>
+        </div>
+        <div class="cell">
+          <div class="t">GET /api/health</div>
+          <div class="d">Liveness + provider mode</div>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="layer">
+      <div class="h">Server logic — framework-agnostic (src/server)</div>
+      <div class="row">
+        <div class="cell">
+          <div class="t">services/portfolio</div>
+          <div class="d">
+            <code>Promise.allSettled</code> per wallet → Position[] + sources
+          </div>
+        </div>
+        <div class="cell">
+          <div class="t">providers/ (index)</div>
+          <div class="d">
+            Selects Alchemy (key set) or Mock — <code>PortfolioProvider</code>
+          </div>
+        </div>
+        <div class="cell">
+          <div class="t">lib/ chains·tokens·amount</div>
+          <div class="d">
+            Network config, assetId normalization, BigInt math
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓ &nbsp; only when ALCHEMY_API_KEY is set &nbsp; ↓</div>
+
+    <div class="layer">
+      <div class="h">External services</div>
+      <div class="row">
+        <div class="cell ext">
+          <div class="t">Alchemy Portfolio API</div>
+          <div class="d">
+            tokens/by-address (balances + metadata + prices), getAssetTransfers
+          </div>
+        </div>
+        <div class="cell ext">
+          <div class="t">WalletConnect / Reown</div>
+          <div class="d">Wallet connection (client only; projectId)</div>
+        </div>
+      </div>
+    </div>
+
+    <h2>Key design decisions</h2>
+    <div class="decision">
+      <b>Flat Position[] + client-side grouping.</b> The server returns one row
+      per (wallet × token); grouping is a pure transform. New groupings need no
+      API change and switching never refetches.
+    </div>
+    <div class="decision">
+      <b>Provider abstraction with mock fallback.</b> <code>getProvider()</code>
+      returns Alchemy or Mock by env. The app runs and is demoable with zero
+      credentials, and swaps to a different API by adding one class.
+    </div>
+    <div class="decision">
+      <b>BigInt for balances.</b> Raw balances are integer base units (strings
+      on the wire), summed as BigInt; conversion to a JS number happens only at
+      display, avoiding float precision loss / overflow.
+    </div>
+    <div class="decision">
+      <b>Layered token identity.</b> Canonical <code>(chainId, address)</code>;
+      cross-chain group key via curated registry → native id →
+      <code>symbol@decimals</code>. Symbol alone is never the key.
+    </div>
+    <div class="decision">
+      <b>Partial failure as data.</b> <code>allSettled</code> + a
+      <code>sources[]</code> status array means a failing chain degrades
+      gracefully instead of erroring the whole view.
+    </div>
+
+    <h2>Data shape</h2>
+    <div class="two">
+      <div>
+        <ul>
+          <li>
+            <b>Position</b>: walletAddress, walletLabel, chainId, networkName,
+            tokenAddress, <b>assetId</b>, symbol, decimals, rawBalance (string),
+            priceUsd, valueUsd
+          </li>
+        </ul>
+      </div>
+      <div>
+        <ul>
+          <li>
+            <b>SourceStatus</b>: walletAddress, status (ok|failed), count?,
+            error?
+          </li>
+          <li>
+            <b>PortfolioResponse</b>: positions[], sources[], mode (live|mock)
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Deployment</h2>
+    <ul>
+      <li>
+        Single Vercel project, Root Directory <code>apps/web</code> — Next.js
+        auto-detected.
+      </li>
+      <li>
+        Env: <code>ALCHEMY_API_KEY</code> (server),
+        <code>NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID</code> (client).
+      </li>
+      <li>
+        No database, no separate API host. Route Handlers run as serverless
+        functions.
+      </li>
+    </ul>
+  </body>
+</html>

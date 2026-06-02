@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Portfolio Explorer — Flow</title>
+    <style>
+      @page {
+        size: letter portrait;
+        margin: 16mm 16mm;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+        color: #0b0d12;
+        line-height: 1.45;
+        margin: 0;
+      }
+      h1 {
+        font-size: 24px;
+        margin: 0 0 2px;
+      }
+      .sub {
+        color: #5b6472;
+        margin: 0 0 22px;
+        font-size: 13px;
+      }
+      h2 {
+        font-size: 15px;
+        margin: 26px 0 10px;
+        border-bottom: 1px solid #e3e6ea;
+        padding-bottom: 5px;
+      }
+      .step {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin: 0 0 8px;
+      }
+      .num {
+        flex: 0 0 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #6366f1;
+        color: #fff;
+        font-weight: 600;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .box {
+        flex: 1;
+        border: 1px solid #e3e6ea;
+        border-radius: 10px;
+        padding: 10px 14px;
+        background: #fff;
+      }
+      .box .t {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .box .d {
+        color: #5b6472;
+        font-size: 12.5px;
+        margin-top: 2px;
+      }
+      .arrow {
+        margin-left: 13px;
+        color: #b3b9c4;
+        font-size: 16px;
+        line-height: 1;
+        margin-bottom: 2px;
+      }
+      code {
+        background: #f0f2f5;
+        padding: 1px 5px;
+        border-radius: 4px;
+        font-size: 12px;
+      }
+      .note {
+        border-left: 3px solid #f59e0b;
+        background: #fff8eb;
+        padding: 8px 12px;
+        border-radius: 0 8px 8px 0;
+        font-size: 12.5px;
+        margin: 8px 0;
+      }
+      .legend {
+        font-size: 12px;
+        color: #5b6472;
+      }
+      .pill {
+        display: inline-block;
+        border: 1px solid #e3e6ea;
+        border-radius: 999px;
+        padding: 1px 9px;
+        font-size: 11px;
+        margin-right: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Multi-Chain Portfolio Explorer — Flow</h1>
+    <p class="sub">
+      What happens from connecting a wallet to seeing a grouped portfolio.
+    </p>
+
+    <h2>Request flow (happy path)</h2>
+
+    <div class="step">
+      <div class="num">1</div>
+      <div class="box">
+        <div class="t">Collect addresses (client)</div>
+        <div class="d">
+          User connects a wallet (RainbowKit/wagmi) — each connect captures one
+          address — or pastes a read-only "watch" address. Saved to the Zustand
+          store, persisted to <code>localStorage</code>.
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="step">
+      <div class="num">2</div>
+      <div class="box">
+        <div class="t">Fetch portfolio</div>
+        <div class="d">
+          <code>usePortfolio</code> (TanStack Query) sends
+          <code>POST /api/portfolio</code> with all tracked addresses. Query key
+          includes the address set, so adding/removing a wallet refetches.
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="step">
+      <div class="num">3</div>
+      <div class="box">
+        <div class="t">Validate &amp; fan out (server)</div>
+        <div class="d">
+          Route Handler validates the body with Zod, then
+          <code>buildPortfolio</code> calls the provider for each wallet inside
+          <code>Promise.allSettled</code> — one wallet/chain failing never sinks
+          the others.
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="step">
+      <div class="num">4</div>
+      <div class="box">
+        <div class="t">Fetch + normalize (provider)</div>
+        <div class="d">
+          Alchemy <code>tokens/by-address</code> returns balances + metadata +
+          prices for all networks in one call. Each token is normalized: raw
+          balance kept as a BigInt string, and an <code>assetId</code> group key
+          is resolved (registry → native → <code>symbol@decimals</code>).
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="step">
+      <div class="num">5</div>
+      <div class="box">
+        <div class="t">Return flat Position[] + sources</div>
+        <div class="d">
+          One record per (wallet × token), plus a <code>sources[]</code> array
+          marking each wallet <span class="pill">ok</span
+          ><span class="pill">failed</span> for the partial-failure UI.
+        </div>
+      </div>
+    </div>
+    <div class="arrow">↓</div>
+
+    <div class="step">
+      <div class="num">6</div>
+      <div class="box">
+        <div class="t">Group &amp; render (client)</div>
+        <div class="d">
+          <code>groupPositions(by)</code> does a pure groupBy —
+          <strong>token</strong> (default), <strong>network</strong>, or
+          <strong>wallet</strong> — summing balances as BigInt and values in
+          USD. Search filters the rows. Switching grouping never refetches.
+        </div>
+      </div>
+    </div>
+
+    <h2>Token normalization — "symbol alone isn't enough"</h2>
+    <div class="note">
+      USDC on Ethereum and USDC on Base have <em>different</em> contract
+      addresses. We assign both the same
+      <code>assetId</code> (<code>usd-coin</code>) via a curated registry, so
+      they collapse into one row when grouping by token. Native ETH across L2s
+      shares <code>native:eth</code>. Unknown tokens fall back to
+      <code>sym:SYMBOL@decimals</code> (decimals included so unrelated
+      same-symbol tokens don't merge).
+    </div>
+
+    <h2>Failure &amp; edge states</h2>
+    <div class="legend">
+      <p>
+        <span class="pill">empty</span> No wallets tracked → prompt to connect /
+        watch.
+      </p>
+      <p>
+        <span class="pill">loading</span> Skeleton rows while the query is in
+        flight.
+      </p>
+      <p>
+        <span class="pill">partial</span> Some wallets fail → banner names them,
+        successful wallets still render.
+      </p>
+      <p>
+        <span class="pill">mock</span> No <code>ALCHEMY_API_KEY</code> →
+        realistic mock data, badge shows "mock".
+      </p>
+    </div>
+  </body>
+</html>

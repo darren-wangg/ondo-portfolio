@@ -1,77 +1,110 @@
-# Ondo
+# Ondo · Multi-Chain Portfolio Explorer
 
-Minimal full-stack starter. A pnpm monorepo wiring together:
+A unified, multi-chain view of a user's token holdings. Connect or watch any
+number of EVM addresses; balances are fetched across networks, normalized so the
+same asset on different chains is treated as one, and presented in a table you
+can regroup by **token**, **network**, or **wallet**.
 
-| Workspace     | Stack                                 | Dev port |
-| ------------- | ------------------------------------- | -------- |
-| `apps/web`    | Next.js 15 · React 19 · TypeScript    | 3000     |
-| `apps/api`    | Node · Express 4 · TypeScript (`tsx`) | 4000     |
-| `packages/db` | Prisma 6 · PostgreSQL (shared client) | —        |
+Single **Next.js 15** app (App Router) — UI plus API **Route Handlers** in one
+Vercel-native deployment. Data comes from the **Alchemy Portfolio API**, with a
+**mock provider** so the app runs with no credentials.
 
-Data flow: **web → api (HTTP) → db**. The web app never touches Postgres directly.
+## Stack
 
-## Prerequisites
-
-- Node `>=20` (`.nvmrc` pins 24)
-- pnpm `10`
-- A PostgreSQL database
+| Concern        | Choice                                                           |
+| -------------- | ---------------------------------------------------------------- |
+| Framework      | Next.js 15 (App Router) · React 19 · TypeScript                  |
+| Wallet connect | RainbowKit + wagmi + viem                                        |
+| Data           | Alchemy Portfolio API (`tokens/by-address`, `getAssetTransfers`) |
+| Server logic   | Next.js Route Handlers (`src/app/api/*`) + Zod validation        |
+| Client state   | Zustand (persisted to localStorage) · TanStack Query             |
+| UI             | Tailwind v4 · next-themes · Framer Motion                        |
+| Tests / format | Vitest · Prettier                                                |
 
 ## Getting started
 
 ```bash
 pnpm install
-cp .env.example .env          # then edit DATABASE_URL
+cp .env.example apps/web/.env.local   # optional — runs on mock data if unset
 
-pnpm db:generate              # generate the Prisma client
-pnpm db:migrate               # create the schema in your database
-
-pnpm dev                      # runs web (:3000) and api (:4000) together
+pnpm dev                              # http://localhost:3000
 ```
 
-Open http://localhost:3000 — the homepage renders the API's `/api/health`
-status, which in turn pings Postgres.
+With **no env vars**, the API serves realistic mock data (and the UI shows a
+`mock` badge). Add an Alchemy key to switch to live on-chain data:
 
-## Scripts (run from repo root)
+```bash
+# apps/web/.env.local
+ALCHEMY_API_KEY=...                       # server-side; live data when present
+NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID=...  # client-side; enables WalletConnect
+```
 
-| Command             | What it does                              |
-| ------------------- | ----------------------------------------- |
-| `pnpm dev`          | Run web + api in parallel                 |
-| `pnpm build`        | Build all apps                            |
-| `pnpm test`         | Run every workspace's test suite (Vitest) |
-| `pnpm typecheck`    | Typecheck every workspace                 |
-| `pnpm format`       | Format the repo with Prettier             |
-| `pnpm format:check` | Check formatting without writing          |
-| `pnpm db:generate`  | `prisma generate`                         |
-| `pnpm db:migrate`   | `prisma migrate dev`                      |
-| `pnpm db:studio`    | Open Prisma Studio                        |
+- Alchemy key (free): https://dashboard.alchemy.com
+- WalletConnect/Reown project id (free): https://dashboard.reown.com
+  (without it, only injected wallets like MetaMask are offered)
 
-## Environment variables
+## How it works
 
-| Variable              | Used by       | Notes                                 |
-| --------------------- | ------------- | ------------------------------------- |
-| `DATABASE_URL`        | `packages/db` | Postgres connection string            |
-| `PORT`                | `apps/api`    | API listen port (default 4000)        |
-| `NEXT_PUBLIC_API_URL` | `apps/web`    | Base URL the web app calls the API at |
+1. **Collect addresses** — each wallet connect captures one address; a "watch"
+   input adds read-only addresses. Tracked wallets live in a Zustand store
+   persisted to localStorage.
+2. **Fetch** — `POST /api/portfolio` fans out across wallets with
+   `Promise.allSettled` (one failing wallet/chain doesn't sink the rest) and
+   returns a flat, normalized `Position[]` plus per-wallet `sources` status.
+3. **Normalize** — each token gets an `assetId` group key: curated registry →
+   CoinGecko id, native coin → shared id (ETH across L2s), else `symbol@decimals`.
+4. **Group & render** — the client does a pure `groupBy` (token/network/wallet)
+   with BigInt balance sums, so switching grouping never refetches.
+
+See `docs/flow.pdf` and `docs/system-design.pdf` for diagrams.
+
+## API
+
+| Route                   | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| `POST /api/portfolio`   | `{ wallets: [{address,label?}], chainIds? }` → portfolio |
+| `GET /api/transactions` | `?address=0x…` → recent transfers (stretch)              |
+| `GET /api/health`       | liveness + active provider mode                          |
+
+## Scripts
+
+| Command             | What it does                     |
+| ------------------- | -------------------------------- |
+| `pnpm dev`          | Run the app (port 3000)          |
+| `pnpm build`        | Production build                 |
+| `pnpm test`         | Vitest unit tests                |
+| `pnpm typecheck`    | `tsc --noEmit` across workspaces |
+| `pnpm format`       | Prettier write                   |
+| `pnpm format:check` | Prettier check                   |
+
+## Project layout
+
+```
+apps/web/src/
+├── app/
+│   ├── api/{portfolio,transactions,health}/route.ts   # server endpoints
+│   ├── page.tsx                                        # explorer UI
+│   └── providers.tsx                                   # wagmi/query/theme
+├── server/                # framework-agnostic backend logic
+│   ├── lib/{chains,tokens,amount}.ts
+│   ├── providers/{alchemy,mock,index}.ts               # swappable data source
+│   ├── services/portfolio.ts                           # allSettled aggregation
+│   └── validation.ts                                   # Zod schemas
+├── features/portfolio/{grouping.ts,PortfolioTable.tsx}
+├── components/            # WalletBar, states, ThemeToggle
+├── hooks/usePortfolio.ts
+└── store/wallets.ts       # Zustand + persist
+```
 
 ## Deploying to Vercel
 
-The **web app** is the Vercel-native piece. Create a Vercel project from this
-repo and set:
+One project. Set **Root Directory** to `apps/web`, framework auto-detects as
+Next.js, install via the repo's `pnpm-lock.yaml`. Add env vars `ALCHEMY_API_KEY`
+and `NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID`. No database or separate API service.
 
-- **Root Directory:** `apps/web` (enable "Include files outside the root
-  directory" so the workspace install resolves `packages/*`).
-- **Framework Preset:** Next.js (auto-detected).
-- **Install Command:** `pnpm install` (auto-detected from `pnpm-lock.yaml`).
-- **Environment variable:** `NEXT_PUBLIC_API_URL` → your deployed API URL.
+## Known limitations / fast-follows
 
-The **Express API** and **Postgres** are not part of the Next.js deployment.
-Options:
-
-- Deploy `apps/api` to a Node host (Railway, Render, Fly.io) with start command
-  `pnpm --filter @ondo/api start`, and run `pnpm --filter @ondo/db deploy`
-  (`prisma migrate deploy`) on release.
-- Or port the Express routes to Next.js Route Handlers (`apps/web/src/app/api/*`)
-  to ship everything on Vercel as one deployment.
-
-Use a managed Postgres (Vercel Postgres, Neon, Supabase) and set `DATABASE_URL`
-in each service's environment.
+- Transaction history: API + provider are built; the UI panel is not yet wired.
+- Alchemy paginates `tokens/by-address` (`pageKey`) only when a wallet holds
+  > 100 tokens — we fetch the first page.
+- Stretch not built: portfolio value-over-time chart, table pagination.
