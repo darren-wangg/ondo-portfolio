@@ -1,5 +1,6 @@
 "use client";
 
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useMemo, useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalletBar } from "@/components/WalletBar";
@@ -45,9 +46,6 @@ export default function Home() {
       <header className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Portfolio Explorer</h1>
-          <p className="text-sm text-[var(--muted)]">
-            A unified, multi-chain view of your holdings.
-          </p>
         </div>
         <div className="flex items-center gap-2">
           {data && (
@@ -56,6 +54,7 @@ export default function Home() {
             </span>
           )}
           <ThemeToggle />
+          <ConnectButton showBalance={false} accountStatus="address" />
         </div>
       </header>
 

@@ -1,6 +1,5 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { shortAddress } from "@/lib/format";
@@ -37,28 +36,22 @@ export function WalletBar() {
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-[var(--border)] bg-[var(--panel)] p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <ConnectButton showBalance={false} accountStatus="address" />
-          <span className="text-sm text-[var(--muted)]">connects a wallet</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            value={watch}
-            onChange={(e) => setWatch(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && addWatch()}
-            placeholder="Watch any 0x address…"
-            spellCheck={false}
-            className="w-72 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 font-mono text-sm outline-none focus:border-[var(--accent)]"
-          />
-          <button
-            type="button"
-            onClick={addWatch}
-            className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            Track
-          </button>
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          value={watch}
+          onChange={(e) => setWatch(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && addWatch()}
+          placeholder="Watch any 0x address…"
+          spellCheck={false}
+          className="w-72 flex-1 rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 font-mono text-sm outline-none focus:border-[var(--accent)]"
+        />
+        <button
+          type="button"
+          onClick={addWatch}
+          className="rounded-lg bg-[var(--accent)] px-3 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        >
+          Track
+        </button>
       </div>
 
       {error && <p className="text-sm text-[var(--bad)]">{error}</p>}
